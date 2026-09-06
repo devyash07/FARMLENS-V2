@@ -1,0 +1,30 @@
+# Frontend dependencies/build
+seed-to-insight-ui/node_modules/
+seed-to-insight-ui/dist/
+
+# Backend - large/generated files
+seed-to-insight-ui/backend/
+
+# Environment/secrets
+.env
+.env.*
+!.env.example
+seed-to-insight-ui/.env
+seed-to-insight-ui/.env.*
+!seed-to-insight-ui/.env.example
+
+# Dataset
+FarmLens_Split/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+.vscode/
