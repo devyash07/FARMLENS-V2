@@ -2,6 +2,7 @@ import { MapPin, Ruler, Pencil, Trash2, Layers } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
 import FarmHealthSummary from "@/components/FarmHealthSummary";
 import { formatHectares, type Farm, type FarmHealth } from "@/lib/farm-api";
 
@@ -28,6 +29,7 @@ const FarmCard = ({
   onDelete,
   deleting,
 }: FarmCardProps) => {
+  const { t } = useI18n();
   return (
     <Card
       onClick={onSelect}
@@ -42,7 +44,7 @@ const FarmCard = ({
             <h3 className="font-display font-semibold text-lg truncate">{farm.name}</h3>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground mt-0.5">
               <MapPin className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{farm.location || "Location not set"}</span>
+              <span className="truncate">{farm.location || t("farm.location_not_set")}</span>
             </p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -55,7 +57,7 @@ const FarmCard = ({
                   e.stopPropagation();
                   onEdit();
                 }}
-                aria-label={`Edit ${farm.name}`}
+                aria-label={t("farm.edit_aria", { name: farm.name })}
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -70,7 +72,7 @@ const FarmCard = ({
                   onDelete();
                 }}
                 disabled={deleting}
-                aria-label={`Delete ${farm.name}`}
+                aria-label={t("farm.delete_aria", { name: farm.name })}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -86,7 +88,8 @@ const FarmCard = ({
           {fieldCount !== undefined && (
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <Layers className="h-3.5 w-3.5" />
-              {fieldCount} {fieldCount === 1 ? "field" : "fields"}
+              {fieldCount}{" "}
+              {fieldCount === 1 ? t("farm.field_count_one") : t("farm.field_count_many")}
             </span>
           )}
         </div>

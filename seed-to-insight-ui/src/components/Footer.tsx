@@ -11,7 +11,7 @@ const Footer = () => {
           <span className="font-display font-bold">FarmLens AI</span>
         </div>
         <p className="text-sm text-muted-foreground">{t("footer.tagline")}</p>
-        <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} FarmLens. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">{t("footer.copyright", { year: new Date().getFullYear() })}</p>
       </div>
     </footer>
   );

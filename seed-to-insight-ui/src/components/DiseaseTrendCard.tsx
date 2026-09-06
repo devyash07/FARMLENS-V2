@@ -9,6 +9,7 @@ import {
   Info,
 } from "lucide-react";
 import type { Observation } from "@/lib/farm-api";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface DiseaseTrendCardProps {
   observations: Observation[];
@@ -24,11 +25,12 @@ export const DiseaseTrendCard = ({
     observations,
   isLoading,
 }: DiseaseTrendCardProps) => {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Disease Trend</CardTitle>
+          <CardTitle>{t("field.trend.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Skeleton className="h-5 w-3/4" />
@@ -43,11 +45,11 @@ export const DiseaseTrendCard = ({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Disease Trend</CardTitle>
+          <CardTitle className="text-base">{t("field.trend.title")}</CardTitle>
         </CardHeader>
         <CardContent className="py-6 text-center text-sm text-muted-foreground">
           <Info className="mx-auto mb-2 h-5 w-5" />
-          No trend data yet — scan a crop image to start observations.
+          {t("field.trend.empty")}
         </CardContent>
       </Card>
     );
@@ -64,7 +66,7 @@ export const DiseaseTrendCard = ({
   const changes: { from: string; to: string }[] = [];
   let prev = "";
   for (const obs of chronological) {
-    const cur = obs.disease || "Unknown";
+    const cur = obs.disease || t("common.unknown");
     if (prev && prev !== cur) {
       changes.push({ from: prev, to: cur });
     }
@@ -81,7 +83,7 @@ export const DiseaseTrendCard = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Disease Trend</CardTitle>
+        <CardTitle className="text-base">{t("field.trend.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Current status */}
@@ -93,25 +95,25 @@ export const DiseaseTrendCard = ({
               <AlertTriangle className="h-5 w-5 text-red-500" />
             )}
             <span className="font-medium">
-              {isHealthy ? "Healthy" : latest.disease || "Unknown"}
+              {isHealthy ? t("disease.Healthy") : latest.disease || t("common.unknown")}
             </span>
           </div>
           <Badge variant={isHealthy ? "default" : "destructive"}>
-            confidence: {confPct}
+            {t("field.timeline.confidence")}: {confPct}
           </Badge>
         </div>
 
         {/* Latest scan time */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          <span>Latest: {latest.created_at ? new Date(latest.created_at).toLocaleString() : "—"}</span>
+          <span>{t("field.trend.latest")}: {latest.created_at ? new Date(latest.created_at).toLocaleString() : "—"}</span>
         </div>
 
         {/* Prediction changes (categorical, not a coverage trend) */}
         {changes.length > 0 ? (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground">
-              Prediction changes
+              {t("field.trend.changes")}
             </p>
             {changes.map((c, i) => (
               <div
@@ -120,7 +122,7 @@ export const DiseaseTrendCard = ({
               >
                 <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>
-                  Prediction changed from "{c.from}" to "{c.to}"
+                  {t("field.trend.changed_from_to", { from: c.from, to: c.to })}
                 </span>
               </div>
             ))}
@@ -129,8 +131,12 @@ export const DiseaseTrendCard = ({
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <TrendingUp className="h-3.5 w-3.5" />
             <span>
-              Consistent prediction across {observations.length} observation
-              {observations.length > 1 ? "s" : ""}.
+              {t(
+                observations.length > 1
+                  ? "field.trend.consistent_many"
+                  : "field.trend.consistent_one",
+                { count: observations.length }
+              )}
             </span>
           </div>
         )}

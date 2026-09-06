@@ -1,13 +1,7 @@
 import { Polygon, Tooltip } from "react-leaflet";
 import { HEALTH_COLORS } from "@/components/HealthLegend";
+import { useI18n } from "@/contexts/I18nContext";
 import type { HealthStatus } from "@/lib/farm-api";
-
-const STATUS_LABELS: Record<HealthStatus, string> = {
-  healthy: "Healthy",
-  at_risk: "At Risk",
-  diseased: "Diseased",
-  unassessed: "Unassessed",
-};
 
 /**
  * Defensively parse a stored `boundary_geojson` value into an array of
@@ -68,6 +62,7 @@ interface FieldPolygonProps {
 
 /** Clickable, status-colored field boundary with an identifying tooltip. */
 const FieldPolygon = ({ positions, status, name, crop, onClick }: FieldPolygonProps) => {
+  const { t } = useI18n();
   const color = HEALTH_COLORS[status] ?? HEALTH_COLORS.unassessed;
   return (
     <Polygon
@@ -82,7 +77,7 @@ const FieldPolygon = ({ positions, status, name, crop, onClick }: FieldPolygonPr
     >
       <Tooltip direction="top" opacity={1}>
         <span className="font-medium">{name}</span>
-        {crop ? ` · ${crop}` : ""} · {STATUS_LABELS[status] ?? STATUS_LABELS.unassessed}
+        {crop ? ` · ${crop}` : ""} · {t(`health.${status}`)}
       </Tooltip>
     </Polygon>
   );

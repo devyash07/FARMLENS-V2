@@ -438,7 +438,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ triggerPopup = false }) => {
                   {AGENT_QUICK_ACTIONS.map((action) => (
                     <button
                       key={action.key}
-                      onClick={() => sendQuickAction(action.message)}
+                      onClick={() => sendQuickAction(t(action.key))}
                       disabled={isLoading}
                       className="px-2.5 py-1 rounded-full border border-border bg-muted text-[11px] font-medium text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
                     >
@@ -457,7 +457,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ triggerPopup = false }) => {
                   disabled={isLoading}
                 />
                 <Button
-                  onClick={sendMessage}
+                  onClick={() => sendMessage()}
                   disabled={!input.trim() || isLoading}
                   size="icon"
                   className="shrink-0"

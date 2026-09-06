@@ -24,6 +24,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -72,13 +73,16 @@ interface FieldDialogState {
 // Lazy-loaded map chunk — keeps leaflet/react-leaflet out of the initial bundle.
 const FarmHealthMap = lazy(() => import("@/components/FarmHealthMap"));
 
-/**
- * Catches map chunk-load / runtime failures and renders a leaflet-free
- * fallback. The field list below the map remains the always-available
- * non-map representation of the same data.
- */
-class MapErrorBoundary extends Component<
-  { children: ReactNode },
+// Catches map chunk-load / runtime failures and renders a leaflet-free
+// fallback. The field list below the map remains the always-available
+// non-map representation of the same data.
+
+const MapErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { t } = useI18n();
+  return <MapErrorBoundaryImpl children={children} mapUnavailableText={t("farm.map_unavailable")} />;
+};
+class MapErrorBoundaryImpl extends Component<
+  { children: ReactNode; mapUnavailableText: string },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -92,7 +96,7 @@ class MapErrorBoundary extends Component<
       return (
         <Alert>
           <Map className="h-4 w-4" />
-          <AlertTitle>Map unavailable</AlertTitle>
+          <AlertTitle>{this.props.mapUnavailableText}</AlertTitle>
           <AlertDescription>
             The interactive map could not be loaded. All field details remain
             available in the list below.
@@ -106,6 +110,7 @@ class MapErrorBoundary extends Component<
 
 const FarmDashboard = () => {
   const { isAuthenticated } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -210,13 +215,13 @@ const FarmDashboard = () => {
     try {
       if (farmDialog.mode === "create") {
         const created = await farmApi.createFarm(data);
-        toast({ title: "Farm created", description: `“${created.name}” has been added.` });
+        toast({ title: "Farm created", description: `"${created.name}" has been added.` });
         setFarmDialog({ open: false, mode: "create", farm: null });
         await loadFarms();
         setSelectedFarmId(created.id);
       } else if (farmDialog.farm) {
         const updated = await farmApi.updateFarm(farmDialog.farm.id, data);
-        toast({ title: "Farm updated", description: `“${updated.name}” has been saved.` });
+        toast({ title: "Farm updated", description: `"${updated.name}" has been saved.` });
         setFarmDialog({ open: false, mode: "edit", farm: null });
         await loadFarms();
       }
@@ -236,7 +241,7 @@ const FarmDashboard = () => {
     setFarmDeleting(true);
     try {
       await farmApi.deleteFarm(farmDeleteTarget.id);
-      toast({ title: "Farm deleted", description: `“${farmDeleteTarget.name}” has been removed.` });
+      toast({ title: "Farm deleted", description: `"${farmDeleteTarget.name}" has been removed.` });
       setFarmDeleteTarget(null);
       await loadFarms();
     } catch (e) {
@@ -259,12 +264,12 @@ const FarmDashboard = () => {
     try {
       if (fieldDialog.mode === "create") {
         const created = await farmApi.createField(selectedFarmId, data);
-        toast({ title: "Field added", description: `“${created.name}” has been added to “${selectedFarm?.name}”.` });
+        toast({ title: "Field added", description: `"${created.name}" has been added to "${selectedFarm?.name}".` });
         setFieldDialog({ open: false, mode: "create", field: null });
         await Promise.all([loadFields(selectedFarmId), loadFarms()]);
       } else if (fieldDialog.field) {
         const updated = await farmApi.updateField(fieldDialog.field.id, data);
-        toast({ title: "Field updated", description: `“${updated.name}” has been saved.` });
+        toast({ title: "Field updated", description: `"${updated.name}" has been saved.` });
         setFieldDialog({ open: false, mode: "edit", field: null });
         await Promise.all([loadFields(selectedFarmId), loadFarms()]);
       }
@@ -284,7 +289,7 @@ const FarmDashboard = () => {
     setFieldDeleting(true);
     try {
       await farmApi.deleteField(fieldDeleteTarget.id);
-      toast({ title: "Field deleted", description: `“${fieldDeleteTarget.name}” has been removed.` });
+      toast({ title: "Field deleted", description: `"${fieldDeleteTarget.name}" has been removed.` });
       setFieldDeleteTarget(null);
       await Promise.all([loadFields(selectedFarmId), loadFarms()]);
     } catch (e) {
@@ -329,17 +334,17 @@ const FarmDashboard = () => {
                 My Farm
               </h1>
               <p className="text-muted-foreground mt-1.5">
-                Manage your farms, fields and their health at a glance.
+                {t("farm.subtitle")}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => loadFarms()} disabled={farmsLoading}>
                 <RefreshCcw className={farmsLoading ? "h-4 w-4 mr-2 animate-spin" : "h-4 w-4 mr-2"} />
-                Refresh
+                {t("common.refresh")}
               </Button>
               <Button onClick={() => setFarmDialog({ open: true, mode: "create", farm: null })}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Farm
+                {t("farm.form.title_add")}
               </Button>
             </div>
           </motion.div>
@@ -362,12 +367,12 @@ const FarmDashboard = () => {
             ) : farmsError ? (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Could not load farms</AlertTitle>
+                <AlertTitle>{t("farm.error_load_title")}</AlertTitle>
                 <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <span>{farmsError}</span>
                   <Button variant="outline" size="sm" onClick={() => loadFarms()}>
                     <RefreshCcw className="h-4 w-4 mr-2" />
-                    Try again
+                    {t("common.retry")}
                   </Button>
                 </AlertDescription>
               </Alert>
@@ -375,13 +380,13 @@ const FarmDashboard = () => {
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-14 text-center">
                   <Sprout className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                  <h3 className="font-display font-semibold text-lg">No farms yet</h3>
+                  <h3 className="font-display font-semibold text-lg">{t("farm.no_farms")}</h3>
                   <p className="text-sm text-muted-foreground mt-1 mb-5 max-w-sm">
-                    Add your first farm to start tracking fields and crop health.
+                    {t("farm.add_first_desc")}
                   </p>
                   <Button onClick={() => setFarmDialog({ open: true, mode: "create", farm: null })}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add your first farm
+                    {t("farm.add_first")}
                   </Button>
                 </CardContent>
               </Card>
@@ -432,21 +437,20 @@ const FarmDashboard = () => {
           >
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete farm?</AlertDialogTitle>
+                <AlertDialogTitle>{t("farm.delete_title")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete “{farmDeleteTarget?.name}” and all of its
-                  fields. This action cannot be undone.
+                  {t("farm.delete_desc", {name: farmDeleteTarget?.name || ""})}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={farmDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={farmDeleting}>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   disabled={farmDeleting}
                   onClick={handleFarmDelete}
                 >
                   {farmDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Delete farm
+                  {t("farm.delete_action")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -459,21 +463,20 @@ const FarmDashboard = () => {
           >
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete field?</AlertDialogTitle>
+                <AlertDialogTitle>{t("field.delete_title")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete “{fieldDeleteTarget?.name}”. This action
-                  cannot be undone.
+                  {t("field.delete_desc", {name: fieldDeleteTarget?.name || ""})}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={fieldDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={fieldDeleting}>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   disabled={fieldDeleting}
                   onClick={handleFieldDelete}
                 >
                   {fieldDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Delete field
+                  {t("field.delete_action")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -485,10 +488,10 @@ const FarmDashboard = () => {
               <div>
                 <h2 className="font-display text-xl font-semibold flex items-center gap-2">
                   <Layers className="h-5 w-5 text-primary" />
-                  Fields
+                  {t("field.fields")}
                   {selectedFarm && (
                     <span className="text-base font-normal text-muted-foreground">
-                      in “{selectedFarm.name}”
+                      in "{selectedFarm.name}"
                     </span>
                   )}
                 </h2>
@@ -504,7 +507,7 @@ const FarmDashboard = () => {
                 onClick={() => setFieldDialog({ open: true, mode: "create", field: null })}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Field
+                {t("field.add")}
               </Button>
             </div>
 
@@ -515,7 +518,7 @@ const FarmDashboard = () => {
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Map className="h-4 w-4 text-primary" />
-                    <h3 className="font-display text-sm font-semibold">Farm Health Map</h3>
+                    <h3 className="font-display text-sm font-semibold">{t("farm.health_map")}</h3>
                   </div>
                   <MapErrorBoundary>
                     <Suspense
@@ -564,7 +567,7 @@ const FarmDashboard = () => {
             ) : fieldsError ? (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Could not load fields</AlertTitle>
+                <AlertTitle>{t("field.error_load_title")}</AlertTitle>
                 <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <span>{fieldsError}</span>
                   <Button
@@ -573,7 +576,7 @@ const FarmDashboard = () => {
                     onClick={() => selectedFarmId && loadFields(selectedFarmId)}
                   >
                     <RefreshCcw className="h-4 w-4 mr-2" />
-                    Try again
+                    {t("common.retry")}
                   </Button>
                 </AlertDescription>
               </Alert>
@@ -581,16 +584,16 @@ const FarmDashboard = () => {
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                   <Layers className="h-8 w-8 text-muted-foreground/50 mb-2" />
-                  <h3 className="font-display font-semibold">No fields yet</h3>
+                  <h3 className="font-display font-semibold">{t("field.no_fields")}</h3>
                   <p className="text-sm text-muted-foreground mt-1 mb-5 max-w-sm">
-                    Add a field to “{selectedFarm?.name}” to start tracking crop health.
+                    {t("field.no_fields_desc", {name: selectedFarm?.name || ""})}
                   </p>
                   <Button
                     variant="outline"
                     onClick={() => setFieldDialog({ open: true, mode: "create", field: null })}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add field
+                    {t("field.add")}
                   </Button>
                 </CardContent>
               </Card>
@@ -608,7 +611,7 @@ const FarmDashboard = () => {
                         <div className="space-y-1.5 text-sm text-muted-foreground">
                           <p className="flex items-center gap-2">
                             <Wheat className="h-4 w-4 shrink-0 text-primary" />
-                            {field.crop || "No crop set"}
+                            {field.crop || t("field.no_crop")}
                           </p>
                           <p className="flex items-center gap-2">
                             <Ruler className="h-4 w-4 shrink-0 text-primary" />
@@ -622,7 +625,7 @@ const FarmDashboard = () => {
                             onClick={() => navigate(`/field/${field.id}`)}
                           >
                             <Eye className="h-3.5 w-3.5 mr-1.5" />
-                            View
+                            {t("common.view")}
                           </Button>
                           <Button
                             variant="outline"
@@ -630,7 +633,7 @@ const FarmDashboard = () => {
                             onClick={() => setFieldDialog({ open: true, mode: "edit", field })}
                           >
                             <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                            Edit
+                            {t("common.edit")}
                           </Button>
                           <Button
                             variant="outline"
@@ -640,7 +643,7 @@ const FarmDashboard = () => {
                             onClick={() => setFieldDeleteTarget(field)}
                           >
                             <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                            Delete
+                            {t("common.delete")}
                           </Button>
                         </div>
                       </CardContent>
@@ -658,4 +661,3 @@ const FarmDashboard = () => {
 };
 
 export default FarmDashboard;
-

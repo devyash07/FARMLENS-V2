@@ -130,10 +130,10 @@ const Profile = () => {
                 {editing ? (
                   <>
                     <Button size="sm" onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                      <Check className="h-4 w-4 mr-1" /> Save
+                      <Check className="h-4 w-4 mr-1" /> {t("profile.save")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => { setEditing(false); setFormError(""); }}>
-                      <X className="h-4 w-4 mr-1" /> Cancel
+                      <X className="h-4 w-4 mr-1" /> {t("profile.cancel")}
                     </Button>
                   </>
                 ) : (
@@ -162,7 +162,7 @@ const Profile = () => {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {t("profile.contact")}</Label>
-                  <Input type="tel" placeholder="+91 XXXXX XXXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                  <Input type="tel" placeholder={t("profile.phone_placeholder")} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> {t("profile.new_password")}</Label>
@@ -192,7 +192,7 @@ const Profile = () => {
             {loadingHistory ? (
               <div className="glass rounded-xl p-12 text-center flex flex-col items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-                <p className="text-muted-foreground">Loading history...</p>
+                <p className="text-muted-foreground">{t("profile.loading_history")}</p>
               </div>
             ) : displayRecords.length === 0 ? (
               <div className="glass rounded-xl p-12 text-center">
@@ -210,14 +210,14 @@ const Profile = () => {
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
                         {h.image_url || h.imagePreview ? (
-                          <img src={h.image_url || h.imagePreview} alt="crop" className="w-full h-full object-cover" />
+                          <img src={h.image_url || h.imagePreview} alt={t("field.form.crop_label")} className="w-full h-full object-cover" />
                         ) : (
                           <ImageIcon className="h-5 w-5 text-primary" />
                         )}
                       </div>
                       <div>
                         <p className="font-medium">{translateDisease(h.disease)}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{h.crop || "Unknown crop"}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{h.crop ? translateCrop(h.crop) : t("profile.unknown_crop")}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -254,17 +254,17 @@ const Profile = () => {
               {selectedRecord.image_url || selectedRecord.imagePreview ? (
                 <div className="w-full space-y-4 my-auto">
                   <div className="relative rounded-lg overflow-hidden border border-border shadow-sm">
-                    <img src={selectedRecord.image_url || selectedRecord.imagePreview} alt="Original" className="w-full h-auto object-cover" />
+                    <img src={selectedRecord.image_url || selectedRecord.imagePreview} alt={t("result.original")} className="w-full h-auto object-cover" />
                     <div className="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded font-medium">
-                      📷 Original
+                      📷 {t("result.original")}
                     </div>
                   </div>
                   
                   {selectedRecord.heatmap_url && (
                     <div className="relative rounded-lg overflow-hidden border border-primary/40 shadow-sm">
-                      <img src={selectedRecord.heatmap_url} alt="Heatmap" className="w-full h-auto object-cover" />
+                      <img src={selectedRecord.heatmap_url} alt={t("result.heatmap")} className="w-full h-auto object-cover" />
                       <div className="absolute top-2 left-2 bg-primary/90 text-primary-foreground text-[10px] px-2 py-1 rounded font-medium">
-                        🔥 Heatmap
+                        🔥 {t("result.heatmap")}
                       </div>
                     </div>
                   )}
@@ -293,7 +293,7 @@ const Profile = () => {
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">{t("result.disease_label")}</p>
                   <h2 className="text-2xl font-display font-bold leading-tight">{translateDisease(selectedRecord.disease)}</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {selectedRecord.severity === 0 ? "Crop appears healthy" : t("result.disease_detected")}
+                    {selectedRecord.severity === 0 ? t("result.healthy_desc") : t("result.disease_detected")}
                   </p>
                 </div>
               </div>
@@ -323,7 +323,7 @@ const Profile = () => {
                   {selectedRecord.treatment && selectedRecord.treatment.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="flex items-center gap-2 text-sm font-semibold text-green-700 dark:text-green-400">
-                        <FileText className="h-4 w-4" /> Personalized Treatment
+                        <FileText className="h-4 w-4" /> {t("profile.personalized_treatment")}
                       </h4>
                       <div className="bg-green-50/50 dark:bg-green-950/20 p-3 rounded-lg border border-green-200/50 dark:border-green-800/50">
                         <p className="text-xs text-foreground/90 leading-relaxed">
@@ -337,7 +337,7 @@ const Profile = () => {
                   {selectedRecord.prevention && selectedRecord.prevention.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="flex items-center gap-2 text-sm font-semibold text-orange-700 dark:text-orange-400">
-                        <ShieldAlert className="h-4 w-4" /> Precautions
+                        <ShieldAlert className="h-4 w-4" /> {t("result.precautions")}
                       </h4>
                       <div className="bg-orange-50/50 dark:bg-orange-950/20 p-3 rounded-lg border border-orange-200/50 dark:border-orange-800/50">
                         <p className="text-xs text-foreground/90 leading-relaxed">
@@ -351,7 +351,7 @@ const Profile = () => {
                   {selectedRecord.symptoms && selectedRecord.symptoms.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-400">
-                        <Activity className="h-4 w-4" /> Symptoms to Watch
+                        <Activity className="h-4 w-4" /> {t("profile.symptoms")}
                       </h4>
                       <ul className="list-disc list-inside text-xs text-muted-foreground ml-1 space-y-1">
                         {(Array.isArray(selectedRecord.symptoms) ? selectedRecord.symptoms : [selectedRecord.symptoms]).map((s: string, i: number) => (

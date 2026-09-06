@@ -11,6 +11,7 @@ import {
   BellRing,
 } from "lucide-react";
 import type { Observation } from "@/lib/farm-api";
+import { useI18n } from "@/contexts/I18nContext";
 
 export type WarningCode =
   | "none"
@@ -33,47 +34,50 @@ interface EarlyWarningCardProps {
 const WARNING_META: Record<
   Exclude<WarningCode, "none">,
   {
-    title: string;
-    message: string;
+    titleKey: string;
+    messageKey: string;
+    badgeKey: string;
     icon: typeof AlertTriangle;
     variant: "default" | "destructive" | "outline" | "secondary";
     tone: "success" | "warning" | "error";
   }
 > = {
   no_recent_disease: {
-    title: "No recent disease detected",
-    message: "The latest scan returned a healthy prediction.",
+    titleKey: "ew.no_recent.title",
+    messageKey: "ew.no_recent.msg",
+    badgeKey: "ew.badge.no_recent_disease",
     icon: CheckCircle2,
     variant: "default",
     tone: "success",
   },
   monitor_closely: {
-    title: "Model uncertainty is high",
-    message:
-      "The latest scan is infected but with low confidence. Consider another scan.",
+    titleKey: "ew.monitor.title",
+    messageKey: "ew.monitor.msg",
+    badgeKey: "ew.badge.monitor_closely",
     icon: Clock,
     variant: "secondary",
     tone: "warning",
   },
   disease_detected: {
-    title: "Disease detected",
-    message: "The latest scan detected a disease with high confidence.",
+    titleKey: "ew.detected.title",
+    messageKey: "ew.detected.msg",
+    badgeKey: "ew.badge.disease_detected",
     icon: AlertTriangle,
     variant: "destructive",
     tone: "error",
   },
   persistent_disease_detected: {
-    title: "Persistent disease detected",
-    message:
-      "The same disease has been detected repeatedlyin recent observations.",
+    titleKey: "ew.persistent.title",
+    messageKey: "ew.persistent.msg",
+    badgeKey: "ew.badge.persistent_disease_detected",
     icon: RefreshCw,
     variant: "destructive",
     tone: "error",
   },
   new_disease_detected: {
-    title: "New disease detected",
-    message:
-      "The latest scan changed from healthy to an infected prediction.",
+    titleKey: "ew.new.title",
+    messageKey: "ew.new.msg",
+    badgeKey: "ew.badge.new_disease_detected",
     icon: Zap,
     variant: "destructive",
     tone: "error",
@@ -136,11 +140,12 @@ export const EarlyWarningCard = ({
   observations,
   isLoading,
 }: EarlyWarningCardProps) => {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Early Warning</CardTitle>
+          <CardTitle className="text-base">{t("ew.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-20 w-full" />
@@ -156,16 +161,16 @@ export const EarlyWarningCard = ({
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <BellRing className="h-4 w-4 text-primary" />
-          Early Warning
+          {t("ew.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {code === "none" || !meta ? (
           <Alert>
             <BellRing className="h-4 w-4" />
-            <AlertTitle>No scans yet</AlertTitle>
+            <AlertTitle>{t("ew.no_scans_title")}</AlertTitle>
             <AlertDescription>
-              No observations have been recorded for this field.
+              {t("ew.no_scans_msg")}
             </AlertDescription>
           </Alert>
         ) : (
@@ -181,20 +186,19 @@ export const EarlyWarningCard = ({
               }
             >
               <meta.icon className="h-4 w-4" />
-              <AlertTitle>{meta.title}</AlertTitle>
-              <AlertDescription>{meta.message}</AlertDescription>
+              <AlertTitle>{t(meta.titleKey)}</AlertTitle>
+              <AlertDescription>{t(meta.messageKey)}</AlertDescription>
             </Alert>
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">
-                Based on the latest AI observation and history
+                {t("ew.based_on")}
               </span>
-              <Badge variant={meta.variant}>{code.replace(/_/g, " ")}</Badge>
+              <Badge variant={meta.variant}>{t(meta.badgeKey)}</Badge>
             </div>
           </>
         )}
         <p className="pt-1 text-xs text-muted-foreground">
-          Status is based on the latest AI observation. It does not represent
-          physical disease coverage.
+          {t("health.disclaimer")}
         </p>
       </CardContent>
     </Card>

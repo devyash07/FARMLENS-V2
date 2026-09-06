@@ -47,43 +47,43 @@ const Login = () => {
     
     if (isSignUp) {
       if (!name.trim()) {
-        setLocalError("Name is required");
+        setLocalError(t("error.name_required"));
         return false;
       }
       if (name.trim().length < 2) {
-        setLocalError("Name must be at least 2 characters");
+        setLocalError(t("error.name_min_length"));
         return false;
       }
     }
     
     if (!email.trim()) {
-      setLocalError("Email is required");
+      setLocalError(t("error.email_required"));
       return false;
     }
     
     if (!password) {
-      setLocalError("Password is required");
+      setLocalError(t("error.password_required"));
       return false;
     }
     
     if (isSignUp) {
       if (password.length < 6) {
-        setLocalError("Password must be at least 6 characters");
+        setLocalError(t("error.password_length"));
         return false;
       }
       
       if (!/[A-Za-z]/.test(password)) {
-        setLocalError("Password must contain at least one letter");
+        setLocalError(t("error.password_letter"));
         return false;
       }
       
       if (!/[0-9]/.test(password)) {
-        setLocalError("Password must contain at least one number");
+        setLocalError(t("error.password_number"));
         return false;
       }
       
       if (password !== confirmPassword) {
-        setLocalError("Passwords do not match");
+        setLocalError(t("error.passwords_mismatch"));
         return false;
       }
     }
@@ -219,7 +219,7 @@ const Login = () => {
                 <Input 
                   id="email" 
                   type="email" 
-                  placeholder="you@example.com" 
+                  placeholder={t("login.email_placeholder")} 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
                   disabled={isLoading}
@@ -250,7 +250,7 @@ const Login = () => {
                 </div>
                 {isSignUp && (
                   <p className="text-xs text-muted-foreground">
-                    At least 6 characters with a letter and number
+                    {t("login.password_hint")}
                   </p>
                 )}
               </div>
@@ -278,7 +278,7 @@ const Login = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    {isSignUp ? "Creating account..." : "Signing in..."}
+                    {isSignUp ? t("login.creating") : t("login.signing_in")}
                   </>
                 ) : (
                   isSignUp ? t("login.signup_btn") : t("login.submit")

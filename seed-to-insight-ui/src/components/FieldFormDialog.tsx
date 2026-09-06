@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
 import type { Field, FieldFormData } from "@/lib/farm-api";
 
 interface FieldFormDialogProps {
@@ -34,6 +35,7 @@ const FieldFormDialog = ({
   onClose,
   onSubmit,
 }: FieldFormDialogProps) => {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [crop, setCrop] = useState("");
   const [area, setArea] = useState("");
@@ -52,7 +54,7 @@ const FieldFormDialog = ({
   const handleSubmit = () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError("Field name is required.");
+      setError(t("field.form.name_required"));
       return;
     }
 
@@ -60,7 +62,7 @@ const FieldFormDialog = ({
     if (area.trim() !== "") {
       parsedArea = Number(area);
       if (Number.isNaN(parsedArea) || parsedArea <= 0) {
-        setError("Area must be a positive number.");
+        setError(t("field.form.area_positive"));
         return;
       }
     }
@@ -83,45 +85,45 @@ const FieldFormDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5 text-primary" />
-            {mode === "create" ? "Add Field" : "Edit Field"}
+            {mode === "create" ? t("field.form.title_add") : t("field.form.title_edit")}
           </DialogTitle>
           <DialogDescription>
             {mode === "create"
               ? farmName
-                ? `Add a field under “${farmName}”.`
-                : "Add a field to this farm."
-              : "Update this field's details."}
+                ? t("field.form.desc_add_farm", { farm: farmName })
+                : t("field.form.desc_add")
+              : t("field.form.desc_edit")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="field-name">Field name *</Label>
+            <Label htmlFor="field-name">{t("field.form.name_label")} *</Label>
             <Input
               id="field-name"
-              placeholder="e.g. North Plot"
+              placeholder={t("field.form.name_placeholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="field-crop">Crop</Label>
+            <Label htmlFor="field-crop">{t("field.form.crop_label")}</Label>
             <Input
               id="field-crop"
-              placeholder="e.g. Tomato"
+              placeholder={t("field.form.crop_placeholder")}
               value={crop}
               onChange={(e) => setCrop(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="field-area">Area (hectares)</Label>
+            <Label htmlFor="field-area">{t("field.form.area_label")}</Label>
             <Input
               id="field-area"
               type="number"
               min="0"
               step="0.01"
-              placeholder="e.g. 2.4"
+              placeholder={t("field.form.area_placeholder")}
               value={area}
               onChange={(e) => setArea(e.target.value)}
             />
@@ -131,11 +133,11 @@ const FieldFormDialog = ({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose} disabled={submitting}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {mode === "create" ? "Add Field" : "Save Changes"}
+            {mode === "create" ? t("field.form.title_add") : t("common.save_changes")}
           </Button>
         </DialogFooter>
       </DialogContent>

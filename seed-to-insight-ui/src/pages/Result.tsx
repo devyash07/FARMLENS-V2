@@ -593,7 +593,7 @@ const Result = () => {
                             <div className="text-center p-4">
                               <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                               <p className="text-sm text-muted-foreground">
-                                Heatmap not available
+                                {t("result.heatmap_unavailable")}
                               </p>
                             </div>
                           </div>

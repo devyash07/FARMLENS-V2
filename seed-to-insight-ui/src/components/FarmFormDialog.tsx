@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
 import type { Farm, FarmFormData } from "@/lib/farm-api";
 
 interface FarmFormDialogProps {
@@ -31,6 +32,7 @@ const FarmFormDialog = ({
   onClose,
   onSubmit,
 }: FarmFormDialogProps) => {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [area, setArea] = useState("");
@@ -49,7 +51,7 @@ const FarmFormDialog = ({
   const handleSubmit = () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError("Farm name is required.");
+      setError(t("farm.form.name_required"));
       return;
     }
 
@@ -57,7 +59,7 @@ const FarmFormDialog = ({
     if (area.trim() !== "") {
       parsedArea = Number(area);
       if (Number.isNaN(parsedArea) || parsedArea <= 0) {
-        setError("Total area must be a positive number.");
+        setError(t("farm.form.area_positive"));
         return;
       }
     }
@@ -80,43 +82,43 @@ const FarmFormDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sprout className="h-5 w-5 text-primary" />
-            {mode === "create" ? "Add Farm" : "Edit Farm"}
+            {mode === "create" ? t("farm.form.title_add") : t("farm.form.title_edit")}
           </DialogTitle>
           <DialogDescription>
             {mode === "create"
-              ? "Register a new farm to start tracking its health."
-              : "Update this farm's details."}
+              ? t("farm.form.desc_add")
+              : t("farm.form.desc_edit")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="farm-name">Farm name *</Label>
+            <Label htmlFor="farm-name">{t("farm.form.name_label")} *</Label>
             <Input
               id="farm-name"
-              placeholder="e.g. Green Valley Farm"
+              placeholder={t("farm.form.name_placeholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="farm-location">Location</Label>
+            <Label htmlFor="farm-location">{t("farm.form.location_label")}</Label>
             <Input
               id="farm-location"
-              placeholder="e.g. Nashik, Maharashtra"
+              placeholder={t("farm.form.location_placeholder")}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="farm-area">Total area (hectares)</Label>
+            <Label htmlFor="farm-area">{t("farm.form.area_label")}</Label>
             <Input
               id="farm-area"
               type="number"
               min="0"
               step="0.01"
-              placeholder="e.g. 12.5"
+              placeholder={t("farm.form.area_placeholder")}
               value={area}
               onChange={(e) => setArea(e.target.value)}
             />
@@ -126,11 +128,11 @@ const FarmFormDialog = ({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose} disabled={submitting}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {mode === "create" ? "Create Farm" : "Save Changes"}
+            {mode === "create" ? t("farm.form.submit_create") : t("common.save_changes")}
           </Button>
         </DialogFooter>
       </DialogContent>

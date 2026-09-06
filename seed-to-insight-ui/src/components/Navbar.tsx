@@ -29,7 +29,7 @@ const Navbar = () => {
   const navLinks = [
     { to: "/", label: t("nav.home") },
     ...(isAuthenticated ? [
-      { to: "/my-farm",  label: "My Farm" },
+      { to: "/my-farm",  label: t("nav.farm") },
       { to: "/profile",  label: t("nav.profile")  },
       { to: "/feedback", label: t("nav.feedback") },
     ] : []),

@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useI18n } from "@/contexts/I18nContext";
 import {
   ArrowLeft,
   Camera,
@@ -29,6 +30,7 @@ const FieldDetail = () => {
   const { fieldId } = useParams<{ fieldId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { t } = useI18n();
 
   const [field, setField] = useState<FieldHealth | null>(null);
   const [observations, setObservations] = useState<Observation[]>([]);
@@ -37,7 +39,7 @@ const FieldDetail = () => {
 
   const load = useCallback(async () => {
     if (!fieldId) {
-      setError("Field not found.");
+      setError(t("field.not_found"));
       setLoading(false);
       return;
     }
@@ -64,14 +66,14 @@ const FieldDetail = () => {
       }
 
       if (obsRes.status === "rejected" && healthRes.status === "rejected") {
-        setError("Could not load the field. Please try again.");
+        setError(t("field.error_load_msg"));
       }
       setLoading(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load field.");
+      setError(e instanceof Error ? e.message : t("field.error_load_field"));
       setLoading(false);
     }
-  }, [fieldId]);
+  }, [fieldId, t]);
 
   useEffect(() => {
     void load();
@@ -105,12 +107,12 @@ const FieldDetail = () => {
         <main className="flex-1 pt-24 pb-16">
           <div className="max-w-6xl mx-auto px-4">
             <Button variant="ghost" onClick={() => navigate("/my-farm")}>
-              <ArrowLeft className="mr-1 h-4 w-4" /> Back to My Farm
+              <ArrowLeft className="mr-1 h-4 w-4" /> {t("field.back_to_farm")}
             </Button>
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Unable to load field</AlertTitle>
-              <AlertDescription>{error ?? "Field not found."}</AlertDescription>
+              <AlertTitle>{t("field.error_load_title")}</AlertTitle>
+              <AlertDescription>{error ?? t("field.not_found")}</AlertDescription>
             </Alert>
           </div>
         </main>
@@ -139,7 +141,7 @@ return (
                 className="-ml-2"
                 onClick={() => navigate("/my-farm")}
               >
-                <ArrowLeft className="mr-1 h-4 w-4" /> My Farm
+                <ArrowLeft className="mr-1 h-4 w-4" /> {t("nav.farm")}
               </Button>
               <h1 className="font-display text-2xl font-bold">{field.name}</h1>
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -152,7 +154,7 @@ return (
               </div>
             </div>
             <Button onClick={() => navigate("/")}>
-              <Camera className="mr-1.5 h-4 w-4" /> Scan New Image
+              <Camera className="mr-1.5 h-4 w-4" /> {t("field.scan_new")}
             </Button>
           </div>
 

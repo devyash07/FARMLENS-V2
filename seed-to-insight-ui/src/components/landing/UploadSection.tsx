@@ -44,12 +44,12 @@ const UploadSection = () => {
   const validateFile = (file: File): { isValid: boolean; error?: string } => {
     // Check if file exists
     if (!file) {
-      return { isValid: false, error: '❌ No file provided. Please select an image to upload.' };
+      return { isValid: false, error: t("upload.error.no_file") };
     }
 
     // Check for empty file FIRST
     if (file.size === 0) {
-      return { isValid: false, error: '❌ File is empty (0 bytes). Please select a valid image file.' };
+      return { isValid: false, error: t("upload.error.empty") };
     }
 
     // Check file type - STRICT validation for JPG/JPEG/PNG only
@@ -64,7 +64,7 @@ const UploadSection = () => {
     if (!isValidType && !isValidExtension) {
       return { 
         isValid: false, 
-        error: `❌ Invalid file type. Only JPG, JPEG, and PNG images are accepted. Your file: ${file.name} (${fileType || 'unknown type'})` 
+        error: `${file.name} — ${t("upload.error.type")} (${fileType || 'unknown type'})` 
       };
     }
 
@@ -72,7 +72,7 @@ const UploadSection = () => {
     if (fileExtension && !isValidExtension) {
       return {
         isValid: false,
-        error: `❌ Invalid file extension "${fileExtension}". Only .jpg, .jpeg, and .png files are allowed.`
+        error: `"${fileExtension}" — ${t("upload.error.ext")}`
       };
     }
 
@@ -81,7 +81,7 @@ const UploadSection = () => {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
       return { 
         isValid: false, 
-        error: `❌ File too large! Maximum size is ${MAX_FILE_SIZE_MB}MB. Your file: ${sizeMB}MB. Please compress or resize the image.` 
+        error: t("upload.error.size", { max: MAX_FILE_SIZE_MB, size: sizeMB })
       };
     }
 
@@ -96,7 +96,7 @@ const UploadSection = () => {
     // Prevent upload during processing
     if (isProcessing) {
       setError({ 
-        message: '⏳ Please wait. An analysis is currently in progress.', 
+        message: t("upload.error.processing"), 
         type: 'warning' 
       });
       return;
@@ -104,7 +104,7 @@ const UploadSection = () => {
 
     if (!files || files.length === 0) {
       setError({ 
-        message: '⚠️ No files selected. Please choose at least one image to upload.', 
+        message: t("upload.error.no_files"), 
         type: 'warning' 
       });
       return;
@@ -124,7 +124,7 @@ const UploadSection = () => {
 
       if (!validation.isValid) {
         invalidCount++;
-        errors.push(validation.error || 'Unknown error');
+        errors.push(validation.error || t("common.unknown"));
         console.warn(`[Upload] ❌ Rejected file "${file.name}":`, validation.error);
         return;
       }
@@ -164,7 +164,7 @@ const UploadSection = () => {
 
         reader.onerror = () => {
           console.error(`[Upload] ❌ Failed to read file: ${file.name}`);
-          errors.push(`Failed to read "${file.name}". The file may be corrupted.`);
+          errors.push(t("upload.error.read", { name: file.name }));
           invalidCount++;
         };
 
@@ -177,17 +177,17 @@ const UploadSection = () => {
     setTimeout(() => {
       if (invalidCount > 0 && validCount === 0) {
         // All files rejected
-        const errorMessage = `❌ All ${invalidCount} file(s) were rejected:\n${errors.slice(0, 3).join('\n')}${errors.length > 3 ? `\n... and ${errors.length - 3} more` : ''}`;
+        const errorMessage = `${t("upload.error.all_rejected", { count: invalidCount })}\n${errors.slice(0, 3).join('\n')}${errors.length > 3 ? `... +${errors.length - 3}` : ''}`;
         setError({ message: errorMessage, type: 'error' });
       } else if (invalidCount > 0) {
         // Some files rejected
-        const errorMessage = `⚠️ ${invalidCount} of ${totalFiles} file(s) rejected. ${validCount} file(s) added successfully.\n${errors[0]}${errors.length > 1 ? ` (and ${errors.length - 1} more...)` : ''}`;
+        const errorMessage = `${t("upload.error.some_rejected", { invalid: invalidCount, total: totalFiles, valid: validCount })}\n${errors[0]}${errors.length > 1 ? ` (+${errors.length - 1})` : ''}`;
         setError({ message: errorMessage, type: 'warning' });
       } else if (validCount > 0) {
         // All files accepted
         console.log(`[Upload] ✅ ${validCount} file(s) added successfully`);
         setError({ 
-          message: `✅ ${validCount} valid image(s) uploaded successfully!`, 
+          message: t("upload.success.added", { count: validCount }), 
           type: 'warning' // Using 'warning' for success messages (green)
         });
         
@@ -198,7 +198,7 @@ const UploadSection = () => {
       // Reset progress after a delay
       setTimeout(() => setUploadProgress(0), 1000);
     }, 100);
-  }, [isProcessing]);
+  }, [isProcessing, t]);
 
   const handleCameraClick = () => {
     console.log("[FarmLens] Opening camera...");
@@ -266,7 +266,7 @@ const UploadSection = () => {
     // Prevent multiple uploads while processing
     if (isProcessing) {
       setError({ 
-        message: '⏳ Analysis already in progress. Please wait...', 
+        message: t("upload.error.processing"), 
         type: 'warning' 
       });
       return;
@@ -275,7 +275,7 @@ const UploadSection = () => {
     // Require at least one valid image
     if (images.length === 0) {
       setError({ 
-        message: '❌ No images selected. Please upload at least one image to analyze.', 
+        message: t("upload.error.no_files"), 
         type: 'error' 
       });
       return;
@@ -320,7 +320,7 @@ const UploadSection = () => {
     } catch (error) {
       console.error("[Upload] ❌ Failed to process images:", error);
       setError({ 
-        message: '❌ Failed to process images. Please try again with different images.', 
+        message: t("error.image_process_failed"), 
         type: 'error' 
       });
       setIsProcessing(false);
@@ -382,7 +382,7 @@ const UploadSection = () => {
                 <div className="mb-4">
                   <Progress value={uploadProgress} className="h-2" />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {isProcessing ? `Processing... ${uploadProgress}%` : `Loading... ${uploadProgress}%`}
+                    {isProcessing ? `${t("upload.processing")} ${uploadProgress}%` : `${t("common.loading")} ${uploadProgress}%`}
                   </p>
                 </div>
               )}
@@ -391,7 +391,7 @@ const UploadSection = () => {
               <div className="space-y-3 mb-6">
                 <Upload className={`h-10 w-10 mx-auto ${isProcessing ? 'text-muted-foreground/50' : 'text-muted-foreground'}`} />
                 <p className="text-muted-foreground">
-                  {isProcessing ? "Processing images..." : t("upload.drag")}
+                  {isProcessing ? t("upload.processing") : t("upload.drag")}
                 </p>
                 
                 {/* Camera and Gallery buttons */}
@@ -445,7 +445,7 @@ const UploadSection = () => {
                 />
                 
                 <p className="text-xs text-muted-foreground font-medium">
-                  📋 Accepted: JPG, JPEG, PNG only • Max size: 10MB
+                  📋 {t("upload.accepted")}
                 </p>
               </div>
 

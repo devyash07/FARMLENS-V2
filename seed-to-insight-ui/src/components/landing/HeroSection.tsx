@@ -11,7 +11,7 @@ const socialLinks = [
 
 const HeroSection = () => {
   const { isAuthenticated } = useAuth();
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const navigate = useNavigate();
 
   const heroImages: Record<string, { webp: string; png: string }> = {
@@ -53,14 +53,14 @@ const HeroSection = () => {
           alt="FarmLens hero"
           className="w-full h-full block"
           style={{ objectFit: "fill", display: "block" }}
-          fetchpriority="high" 
+          fetchpriority="high"
         />
       </picture>
 
       {/* Get started hotspot */}
       <button
         onClick={handleGetStarted}
-        aria-label="Get started"
+        aria-label={t("hero.cta")}
         className="absolute cursor-pointer rounded-full"
         style={{ left: "4%", top: "64%", width: "15%", height: "7%" }}
       />

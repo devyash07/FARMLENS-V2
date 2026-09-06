@@ -38,20 +38,20 @@ const Feedback = () => {
     
     // Name: Must contain at least one actual letter (prevents "123456")
     if (!/[a-zA-Z]/.test(name)) {
-      toast.error("Please enter a valid name (cannot be only numbers).");
+      toast.error(t("feedback.error_name"));
       return;
     }
 
     // Email: Must match a standard email format (e.g., something@something.com)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email && !emailRegex.test(email)) {
-      toast.error("Please enter a valid email address (e.g., name@gmail.com).");
+      toast.error(t("feedback.error_email"));
       return;
     }
 
     // Message: Must be at least 10 characters long
     if (message.trim().length < 10) {
-      toast.error("Please provide a bit more detail in your feedback.");
+      toast.error(t("feedback.error_detail"));
       return;
     }
 
@@ -74,7 +74,7 @@ const Feedback = () => {
       
     } catch (error) {
       console.error("[FarmLens] Failed to submit feedback:", error);
-      toast.error("Failed to send feedback. Please try again.");
+      toast.error(t("feedback.error_submit"));
     } finally {
       setIsSubmitting(false);
     }
@@ -95,7 +95,7 @@ const Feedback = () => {
                   id="fb-name" 
                   value={name} 
                   onChange={e => setName(e.target.value)} 
-                  placeholder="e.g. John Doe"
+                  placeholder={t("feedback.name_placeholder")}
                   required 
                 />
               </div>
@@ -106,7 +106,7 @@ const Feedback = () => {
                   type="email" 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
-                  placeholder="e.g. john@gmail.com"
+                  placeholder={t("feedback.email_placeholder")}
                   required
                 />
               </div>
@@ -117,7 +117,7 @@ const Feedback = () => {
                   rows={5} 
                   value={message} 
                   onChange={e => setMessage(e.target.value)} 
-                  placeholder="Tell us what you think..."
+                  placeholder={t("feedback.message_placeholder")}
                   required 
                   spellCheck={true}        // Explicitly turns on red squiggly lines for typos
                   autoCorrect="on"         // Tells mobile keyboards to auto-correct typos
@@ -132,7 +132,7 @@ const Feedback = () => {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
+                    {t("feedback.sending")}
                   </>
                 ) : (
                   t("feedback.submit")

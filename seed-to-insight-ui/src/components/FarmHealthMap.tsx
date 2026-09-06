@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { MapPin } from "lucide-react";
 import FieldPolygon, { parseBoundaryPositions } from "@/components/FieldPolygon";
 import { HEALTH_COLORS } from "@/components/HealthLegend";
+import { useI18n } from "@/contexts/I18nContext";
 import type { Farm, Field, HealthStatus } from "@/lib/farm-api";
 
 /**
@@ -52,6 +53,7 @@ function FitToFields({ bounds }: { bounds: [number, number][] }) {
 }
 
 const FarmHealthMap = ({ farm, fields, statuses, onFieldClick }: FarmHealthMapProps) => {
+  const { t } = useI18n();
   // Resolve renderable geometry once per fields change.
   const { polygons, points, allPositions } = useMemo(() => {
     const polygons: { field: Field; positions: [number, number][] }[] = [];
@@ -103,8 +105,7 @@ const FarmHealthMap = ({ farm, fields, statuses, onFieldClick }: FarmHealthMapPr
       {hasNothingToDraw && (
         <div className="flex items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
-          No field boundaries or coordinates saved yet — fields will appear on
-          the map once they have geometry.
+          {t("healthmap.no_geometry")}
         </div>
       )}
       <MapContainer

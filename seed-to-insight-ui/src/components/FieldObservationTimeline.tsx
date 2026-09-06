@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle, AlertTriangle, Calendar, ImageIcon } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import type { Observation } from "@/lib/farm-api";
 import { formatDate } from "@/lib/farm-api";
 
@@ -19,6 +20,7 @@ export const FieldObservationTimeline = ({
   observations,
   isLoading,
 }: FieldObservationTimelineProps) => {
+  const { t } = useI18n();
   const isHealthy = (disease: string) =>
     /healthy/i.test(disease) || disease.toLowerCase().includes("healthy");
 
@@ -26,7 +28,7 @@ export const FieldObservationTimeline = ({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Observation Timeline</CardTitle>
+          <CardTitle>{t("field.timeline.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -41,10 +43,10 @@ export const FieldObservationTimeline = ({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Observation Timeline</CardTitle>
+          <CardTitle>{t("field.timeline.title")}</CardTitle>
         </CardHeader>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          No observations recorded for this field yet.
+          {t("field.timeline.empty")}
         </CardContent>
       </Card>
     );
@@ -53,7 +55,7 @@ export const FieldObservationTimeline = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Observation Timeline</CardTitle>
+        <CardTitle className="text-base">{t("field.timeline.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {observations.map((obs) => {
@@ -96,11 +98,11 @@ export const FieldObservationTimeline = ({
                       ) : (
                         <AlertTriangle className="mr-1 h-3 w-3" />
                       )}
-                      {obs.disease || "Unknown"}
+                      {obs.disease || t("common.unknown")}
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    confidence: {confPct}
+                    {t("field.timeline.confidence")}: {confPct}
                   </span>
                 </div>
 
@@ -111,10 +113,10 @@ export const FieldObservationTimeline = ({
                   </span>
                   {obs.severity != null && (
                     <span>
-                      model-estimated severity: {obs.severity}
+                      {t("field.timeline.severity")}: {obs.severity}
                     </span>
                   )}
-                  {obs.crop && <span>crop: {obs.crop}</span>}
+                  {obs.crop && <span>{t("field.form.crop_label")}: {obs.crop}</span>}
                 </div>
               </div>
             </div>
