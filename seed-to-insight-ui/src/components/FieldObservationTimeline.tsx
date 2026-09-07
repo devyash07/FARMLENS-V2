@@ -64,7 +64,7 @@ export const FieldObservationTimeline = ({
             obs.confidence != null ? Number(obs.confidence) : null;
           const confPct =
             conf != null && !Number.isNaN(conf)
-              ? `${Math.round(conf * (conf > 1 ? 0.01 : 1))}%`
+              ? `${Math.round(conf > 1 ? conf : conf * 100)}%`
               : "—";
 
           return (
@@ -113,7 +113,7 @@ export const FieldObservationTimeline = ({
                   </span>
                   {obs.severity != null && (
                     <span>
-                      {t("field.timeline.severity")}: {obs.severity}
+                      {t("result.severity")}: {obs.severity}
                     </span>
                   )}
                   {obs.crop && <span>{t("field.form.crop_label")}: {obs.crop}</span>}

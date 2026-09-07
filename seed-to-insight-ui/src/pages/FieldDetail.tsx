@@ -55,6 +55,7 @@ const FieldDetail = () => {
       if (obsRes.status === "fulfilled") {
         obs = obsRes.value?.observations ?? [];
       }
+      setObservations(obs);
 
       if (healthRes.status === "fulfilled") {
         let found: FieldHealth | undefined;
@@ -153,7 +154,11 @@ return (
                 <FieldHealthBadge status={field.health_status} />
               </div>
             </div>
-            <Button onClick={() => navigate("/")}>
+            <Button onClick={() => {
+              // Farm Twin: preserve fieldId through scan flow
+              sessionStorage.setItem("farmlens_field_id", fieldId);
+              navigate("/");
+            }}>
               <Camera className="mr-1.5 h-4 w-4" /> {t("field.scan_new")}
             </Button>
           </div>

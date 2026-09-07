@@ -43,6 +43,9 @@ export interface FieldHealth {
   id: string;
   name: string;
   crop: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  boundary_geojson: unknown;
   health_status: HealthStatus;
   latest_observation: Record<string, unknown> | null;
 }
@@ -66,6 +69,8 @@ export interface FieldFormData {
   name: string;
   crop: string | null;
   area_hectares: number | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 /** A single crop-scan observation (a row from the `history` table). */

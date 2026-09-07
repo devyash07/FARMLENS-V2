@@ -39,6 +39,8 @@ const FieldFormDialog = ({
   const [name, setName] = useState("");
   const [crop, setCrop] = useState("");
   const [area, setArea] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [error, setError] = useState("");
 
   // Reset the form each time the dialog opens (create vs edit)
@@ -47,6 +49,8 @@ const FieldFormDialog = ({
       setName(field?.name ?? "");
       setCrop(field?.crop ?? "");
       setArea(field?.area_hectares != null ? String(field.area_hectares) : "");
+      setLatitude(field?.latitude != null ? String(field.latitude) : "");
+      setLongitude(field?.longitude != null ? String(field.longitude) : "");
       setError("");
     }
   }, [open, field]);
@@ -67,10 +71,30 @@ const FieldFormDialog = ({
       }
     }
 
+    let parsedLatitude: number | null = null;
+    if (latitude.trim() !== "") {
+      parsedLatitude = Number(latitude);
+      if (Number.isNaN(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90) {
+        setError(t("field.form.latitude_invalid") || "Latitude must be between -90 and 90");
+        return;
+      }
+    }
+
+    let parsedLongitude: number | null = null;
+    if (longitude.trim() !== "") {
+      parsedLongitude = Number(longitude);
+      if (Number.isNaN(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180) {
+        setError(t("field.form.longitude_invalid") || "Longitude must be between -180 and 180");
+        return;
+      }
+    }
+
     onSubmit({
       name: trimmedName,
       crop: crop.trim() || null,
       area_hectares: parsedArea,
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
     });
   };
 
@@ -127,6 +151,34 @@ const FieldFormDialog = ({
               value={area}
               onChange={(e) => setArea(e.target.value)}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="field-latitude">{t("field.form.latitude_label") || "Latitude"}</Label>
+              <Input
+                id="field-latitude"
+                type="number"
+                min="-90"
+                max="90"
+                step="0.0001"
+                placeholder={t("field.form.latitude_placeholder") || "-90 to 90"}
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="field-longitude">{t("field.form.longitude_label") || "Longitude"}</Label>
+              <Input
+                id="field-longitude"
+                type="number"
+                min="-180"
+                max="180"
+                step="0.0001"
+                placeholder={t("field.form.longitude_placeholder") || "-180 to 180"}
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+              />
+            </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

@@ -11,11 +11,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { DiseaseInfoPanel } from "@/components/DiseaseInfoPanel";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  ArrowLeft, 
-  MessageSquare, 
+import {
+  AlertTriangle,
+  CheckCircle,
+  ArrowLeft,
+  MessageSquare,
   Loader2,
   ImageIcon,
   Activity,
@@ -39,7 +39,7 @@ interface AnalysisItem {
   heatmap: string;
   explanation: string;
   treatment: string;
-  precautions?: string;
+  precautions?: string | string[];
   // Phase 6: softmax-ambiguity signals from the backend (level + recommendation
   // only — entropy/margin stay server-side so farmers never see raw ML metrics).
   uncertainty?: {
@@ -71,45 +71,78 @@ async function analyzeImage(preview: string, filename: string, t: (key: string) 
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-    
+
     if (token) {
       const blob = await (await fetch(preview)).blob();
       const form = new FormData();
       form.append("file", blob, filename);
-      form.append("language", language);  
-      
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/analyze`, {
-        method: "POST",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "true" 
-        },
-        body: form,
-      });
-      
-      if (res.ok) {
-        const d = await res.json();
-        return {
-          preview,
-          filename,
-          crop: d.crop || "Unknown",
-          disease: d.disease,
-          disease_key: d.disease_key || "",
-          severity: d.severity,
-          confidence: d.confidence,
-          status: d.status,
-          heatmap: d.heatmap_b64
-            ? `data:image/jpeg;base64,${d.heatmap_b64}`
-            : "",
-          explanation: d.explanation || "",
-          treatment: d.treatment || "",
-          precautions: d.precautions || "",
-          uncertainty: d.uncertainty ?? null,
-        };
+      form.append("language", language);
+
+      // Farm Twin: include field_id if scanning from a specific field
+      const fieldId = sessionStorage.getItem("farmlens_field_id");
+      if (fieldId) {
+        form.append("field_id", fieldId);
       }
-    } 
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout (backend is 30s)
+
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/analyze`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "ngrok-skip-browser-warning": "true"
+          },
+          body: form,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        // Handle 408 timeout response from backend
+        if (res.status === 408) {
+          throw new Error("REQUEST_TIMEOUT_408");
+        }
+
+        if (res.ok) {
+          const d = await res.json();
+          return {
+            preview,
+            filename,
+            crop: d.crop || "Unknown",
+            disease: d.disease,
+            disease_key: d.disease_key || "",
+            severity: d.severity,
+            confidence: d.confidence,
+            status: d.status,
+            heatmap: d.heatmap_b64
+              ? `data:image/jpeg;base64,${d.heatmap_b64}`
+              : "",
+            explanation: d.explanation || "",
+            treatment: d.treatment || "",
+            precautions: Array.isArray(d.precautions) ? d.precautions : (d.precautions ? [d.precautions] : []),
+            uncertainty: d.uncertainty ?? null,
+          };
+        }
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr instanceof Error) {
+          if (fetchErr.name === 'AbortError' || fetchErr.message === 'REQUEST_TIMEOUT_408') {
+            throw new Error("REQUEST_TIMEOUT_408");
+          }
+        }
+        throw fetchErr;
+      }
+    }
   } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
     console.error("[FarmLens] Backend request failed:", e);
+
+    // Re-throw timeout errors so they can be handled by the caller
+    if (errorMsg === "REQUEST_TIMEOUT_408") {
+      throw new Error("REQUEST_TIMEOUT_408");
+    }
   }
 
   const idx = await hashIndex(preview);
@@ -252,9 +285,9 @@ const Result = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) { 
-      navigate("/login"); 
-      return; 
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
     }
 
     let uploads: { preview: string; filename: string }[] = [];
@@ -263,18 +296,45 @@ const Result = () => {
     if (!uploads.length) {
       const p = sessionStorage.getItem("farmlens_upload");
       const f = sessionStorage.getItem("farmlens_filename") || "image.jpg";
-      if (!p) { 
-        navigate("/"); 
-        return; 
+      if (!p) {
+        navigate("/");
+        return;
       }
       uploads = [{ preview: p, filename: f }];
     }
 
     (async () => {
       try {
-        const analyzed = await Promise.all(uploads.map(u => analyzeImage(u.preview, u.filename, t, lang)));
+        const analyzed = await Promise.all(
+          uploads.map(u =>
+            analyzeImage(u.preview, u.filename, t, lang)
+              .catch(err => {
+                const errorMsg = err instanceof Error ? err.message : String(err);
+                if (errorMsg === "REQUEST_TIMEOUT_408") {
+                  return {
+                    preview: u.preview,
+                    filename: u.filename,
+                    crop: "Unknown",
+                    disease: "Unknown",
+                    disease_key: "",
+                    severity: 0,
+                    confidence: 0,
+                    status: "error_timeout",
+                    heatmap: "",
+                    explanation: t("error.request_timeout") || "Request timeout. Please try again.",
+                    treatment: "",
+                    precautions: [],
+                    uncertainty: null,
+                    error: true,
+                    errorMessage: t("error.request_timeout_hint") || "The analysis took too long. Please check your connection and try again."
+                  } as any;
+                }
+                throw err;
+              })
+          )
+        );
         setItems(analyzed);
-        
+
         const grouped: { [crop: string]: AnalysisItem[] } = {};
         analyzed.forEach(item => {
           const crop = item.crop || "Unknown";
@@ -284,8 +344,9 @@ const Result = () => {
         setGroupedItems(grouped);
         setCurrentCrop(Object.keys(grouped)[0] || "Unknown");
         setLoading(false);
-        
+
         analyzed.forEach(async (a) => {
+          if ((a as any).error) return; // Skip error items
           addAnalysis({
             imageName: a.filename,
             crop: a.crop,
@@ -306,7 +367,7 @@ const Result = () => {
                 const blob = await res.blob();
                 const fileExt = a.filename.split('.').pop() || 'jpg';
                 const fileName = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                
+
                 const { data, error } = await supabase.storage.from('images').upload(fileName, blob);
                 if (error) throw error;
                 if (data) {
@@ -322,6 +383,24 @@ const Result = () => {
             const heatmapUrl = await uploadToBucket(a.heatmap, "heat");
 
             const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+            // Farm Twin: include field_id if scanning from a specific field
+            const fieldId = sessionStorage.getItem("farmlens_field_id");
+            const historyBody: any = {
+              crop: a.crop,
+              disease: a.disease,
+              severity: a.severity,
+              confidence: a.confidence,
+              image_url: imageUrl,
+              heatmap_url: heatmapUrl,
+              symptoms: [],
+              prevention: Array.isArray(a.precautions) ? a.precautions : (a.precautions ? [a.precautions] : []),
+              treatment: a.treatment ? [a.treatment] : []
+            };
+            if (fieldId) {
+              historyBody.field_id = fieldId;
+            }
+
             const saveRes = await fetch(`${backendUrl.replace(/\/$/, '')}/history`, {
               method: 'POST',
               headers: {
@@ -329,17 +408,7 @@ const Result = () => {
                 'Authorization': `Bearer ${token}`,
                 'ngrok-skip-browser-warning': 'true'
               },
-              body: JSON.stringify({
-                crop: a.crop,
-                disease: a.disease,
-                severity: a.severity,
-                confidence: a.confidence,
-                image_url: imageUrl,
-                heatmap_url: heatmapUrl,
-                symptoms: [],
-                prevention: a.precautions ? [a.precautions] : [],
-                treatment: a.treatment ? [a.treatment] : []
-              })
+              body: JSON.stringify(historyBody)
             });
             // Phase 9: keep the saved history row id so the farmer can attach
             // verification feedback to THIS analysis later.
@@ -364,7 +433,7 @@ const Result = () => {
         navigate("/");
       }
     })();
-  }, []); 
+  }, []);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -397,7 +466,7 @@ const Result = () => {
       }
     };
     reAnalyze();
-  }, [lang]); 
+  }, [lang]);
 
   if (loading) return (
     <div className="min-h-screen flex flex-col">
@@ -413,26 +482,71 @@ const Result = () => {
   );
 
   if (!items.length) return null;
-  
+
   const item = items[0];
+
+  // Handle timeout errors
+  if ((item as any).error && (item as any).errorMessage === "error_timeout") {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
+        <Navbar />
+        <main className="flex-1 pt-20 pb-16">
+          <div className="container max-w-2xl">
+            <Card className="border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/10">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <CardTitle className="text-red-700 dark:text-red-400">{t("error.request_timeout")}</CardTitle>
+                </div>
+                <CardDescription className="text-red-600/80 dark:text-red-400/70">
+                  {(item as any).errorMessage || t("error.request_timeout_hint")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-foreground/80">
+                  The analysis took longer than expected. This can happen if:
+                </p>
+                <ul className="list-disc list-inside space-y-2 text-sm text-foreground/80">
+                  <li>Your network connection is slow or unstable</li>
+                  <li>The server is processing many requests</li>
+                  <li>The image file is unusually large</li>
+                </ul>
+                <div className="pt-4 flex gap-3">
+                  <Button onClick={() => window.location.reload()} className="gap-2">
+                    <RefreshCcw className="h-4 w-4" />
+                    Try Again
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/")}>
+                    Go Home
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   const isHealthy = item.status === "Healthy" || item.disease.toLowerCase() === "healthy";
-  
+
   const getSeverityLevel = (severity: number) => {
     if (severity === 0) return { label: t("result.healthy"), color: "text-green-600", bgColor: "bg-green-100" };
     if (severity < 40) return { label: t("result.mild"), color: "text-yellow-600", bgColor: "bg-yellow-100" };
     if (severity < 70) return { label: t("result.moderate"), color: "text-orange-600", bgColor: "bg-orange-100" };
     return { label: t("result.severe"), color: "text-red-600", bgColor: "bg-red-100" };
   };
-  
+
   const severityInfo = getSeverityLevel(item.severity);
-  
+
   const getConfidenceLevel = (confidence: number) => {
     if (confidence >= 90) return { label: t("result.very_high"), color: "text-green-600" };
     if (confidence >= 80) return { label: t("result.high"), color: "text-blue-600" };
     if (confidence >= 70) return { label: t("result.moderate"), color: "text-yellow-600" };
     return { label: t("result.low"), color: "text-orange-600" };
   };
-  
+
   const confidenceInfo = getConfidenceLevel(item.confidence);
 
   // Phase 6: "Prediction Reliability" is a softmax-ambiguity indicator
@@ -454,13 +568,13 @@ const Result = () => {
       <Navbar />
       <main className="flex-1 pt-20 pb-16">
         <div className="container mx-auto px-4 max-w-7xl">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="space-y-6"
           >
-            
+
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-display font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
@@ -470,20 +584,20 @@ const Result = () => {
                   AI-Powered Plant Disease Analysis
                 </p>
               </div>
-              
+
               <div className="flex gap-3">
-                <Button 
-                  onClick={() => { 
+                <Button
+                  onClick={() => {
                     sessionStorage.clear();
-                    navigate("/", { state: { scrollToUpload: true } }); 
+                    navigate("/", { state: { scrollToUpload: true } });
                   }}
                   className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <RefreshCcw className="h-4 w-4 mr-2" />
                   {t("result.another")}
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => navigate("/feedback")}
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
@@ -514,13 +628,13 @@ const Result = () => {
                         {isHealthy ? t("result.healthy_detected_title") : t("result.disease_detected_title")}
                       </h2>
                       <p className="text-muted-foreground">
-                        {isHealthy 
+                        {isHealthy
                           ? t("result.healthy_desc")
                           : t("result.infected_desc")
                         }
                       </p>
                     </div>
-                    <Badge 
+                    <Badge
                       variant={isHealthy ? "default" : "destructive"}
                       className="text-lg px-4 py-2"
                     >
@@ -532,7 +646,7 @@ const Result = () => {
             </motion.div>
 
             <div className="grid lg:grid-cols-2 gap-6">
-              
+
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -553,9 +667,9 @@ const Result = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="relative rounded-lg overflow-hidden border-2 border-border group">
-                          <img 
-                            src={item.preview} 
-                            alt="Original Plant" 
+                          <img
+                            src={item.preview}
+                            alt="Original Plant"
                             className="w-full aspect-square object-cover transition-transform group-hover:scale-105"
                           />
                           <div className="absolute top-2 left-2">
@@ -573,9 +687,9 @@ const Result = () => {
                         {item.heatmap ? (
                           <>
                             <div className="relative rounded-lg overflow-hidden border-2 border-primary/50 group">
-                              <img 
-                                src={item.heatmap} 
-                                alt="Disease Heatmap" 
+                              <img
+                                src={item.heatmap}
+                                alt="Disease Heatmap"
                                 className="w-full aspect-square object-cover transition-transform group-hover:scale-105"
                               />
                               <div className="absolute top-2 left-2">
@@ -653,7 +767,7 @@ const Result = () => {
                 transition={{ delay: 0.3 }}
                 className="space-y-6"
               >
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -662,7 +776,7 @@ const Result = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    
+
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -691,7 +805,7 @@ const Result = () => {
                         <div className="flex-1">
                           <p className="text-2xl font-bold">{translateDisease(item.disease)}</p>
                         </div>
-                        <Badge 
+                        <Badge
                           variant={isHealthy ? "default" : "destructive"}
                           className="text-sm"
                         >
@@ -796,8 +910,8 @@ const Result = () => {
                           {item.treatment}
                         </p>
                       </div>
-                      
-                      {item.precautions && (
+
+                      {item.precautions && (Array.isArray(item.precautions) ? item.precautions.length > 0 : !!item.precautions) && (
                         <>
                           <Separator />
                           <div className="space-y-3">
@@ -808,9 +922,19 @@ const Result = () => {
                               </h4>
                             </div>
                             <div className="bg-orange-50/50 dark:bg-orange-950/20 rounded-lg p-3 border border-orange-200/50 dark:border-orange-800/50">
-                              <p className="text-xs leading-relaxed text-foreground/90">
-                                {item.precautions}
-                              </p>
+                              {Array.isArray(item.precautions) ? (
+                                <ul className="list-disc list-inside space-y-1">
+                                  {item.precautions.map((p, idx) => (
+                                    <li key={idx} className="text-xs leading-relaxed text-foreground/90">
+                                      {p}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-xs leading-relaxed text-foreground/90">
+                                  {item.precautions}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </>
@@ -856,10 +980,10 @@ const Result = () => {
               transition={{ delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-3 pt-4"
             >
-              <Button 
-                onClick={() => { 
+              <Button
+                onClick={() => {
                   sessionStorage.clear();
-                  navigate("/", { state: { scrollToUpload: true } }); 
+                  navigate("/", { state: { scrollToUpload: true } });
                 }}
                 size="lg"
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
@@ -867,7 +991,7 @@ const Result = () => {
                 <RefreshCcw className="h-5 w-5 mr-2" />
                 {t("result.another")}
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 size="lg"
                 onClick={() => navigate("/feedback")}
@@ -876,7 +1000,7 @@ const Result = () => {
                 <MessageSquare className="h-5 w-5 mr-2" />
                 {t("result.feedback")}
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 size="lg"
                 onClick={() => navigate("/")}

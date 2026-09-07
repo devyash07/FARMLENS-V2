@@ -77,7 +77,7 @@ export const DiseaseTrendCard = ({
     latest.confidence != null ? Number(latest.confidence) : null;
   const confPct =
     conf != null && !Number.isNaN(conf)
-      ? `${Math.round(conf * (conf > 1 ? 0.01 : 1))}%`
+      ? `${Math.round(conf > 1 ? conf : conf * 100)}%`
       : "—";
 
   return (
